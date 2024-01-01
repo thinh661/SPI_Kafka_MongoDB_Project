@@ -17,7 +17,7 @@ import hashlib
 import imutils
 import base64
 from datetime import date
-from simple_facerec import SimpleFacerec
+from face_recog import FaceRecognition
 from PIL import Image
 import folium
 from IPython.display import display
@@ -31,7 +31,6 @@ from ipyleaflet import (
     basemaps,
     FullScreenControl
 )
-# for labeling marker as image:
 from ipywidgets import HTML
 import IPython
 from ipywidgets import widgets
@@ -69,9 +68,8 @@ def get_marker_widget(img_path, name):
         return safe_message
 
 
-# the following module offers Kakfa Producer, Consumer, and mongodb objects.
-# Through here, you can initialize the class and just call modules you need only.
-class SPI_Utils:
+
+class Utlis:
     
     def __init__(self, mode,
                        streaming_kafka_topic="spi_topic",
@@ -80,29 +78,21 @@ class SPI_Utils:
                        data_store_dir = os.path.join(os.getcwd(), "frame_data"),
                        face_store_dir = os.path.join(os.getcwd(), "faces")
                 ):
-        # setup main directory where we will store the images arriving from online/offline stream
         self.data_store_dir = data_store_dir
         mkdir_if_none(self.data_store_dir)
         self.face_store_dir = face_store_dir
-        # setup default width for all images to be cropped down to
         self.width = 640
         
-        # # setup parallel processing server for processing videos simultaneously:
-        # # self.job_server = pp.Server()  # for parallel processing videos to MongoDB
         self.job_list = []
         self.results = []
         
-        # initialize kafka topic to write and read from:
         self.streaming_kafka_topic = streaming_kafka_topic
         
-        # initializing Kafka Producer:
         self.producer = KafkaProducer(bootstrap_servers=kafka_bootstrap_servers)
         
-        # initializing Kafka Consumer:
         self.consumer = KafkaConsumer(self.streaming_kafka_topic, bootstrap_servers=kafka_bootstrap_servers)
         
         
-        # get list of videos requested from agency:
         self.json_requests_dict = self.read_json_data_into_dict(json_requests_file_path)
         if mode != "consumer":
             if self.json_requests_dict is None:
@@ -113,10 +103,8 @@ class SPI_Utils:
                     print(f"  - {self.json_requests_dict[v]['video_path']}")
                 print("\n")
         
-        # if we are initiating this project for recogniton, then load up face embeddings and map:
         if mode == "recognition":
-            # Encode faces from a folder
-            self.sfr = SimpleFacerec()
+            self.sfr = FaceRecognition()
             self.sfr.load_encoding_images(os.path.join(os.getcwd(), "faces"))
             
             us_center = [38.6252978589571, -97.3458993652344]
@@ -124,13 +112,11 @@ class SPI_Utils:
             self.spi_map = Map(center=us_center, zoom=zoom)
             self.spi_map.add_control(FullScreenControl())
             s = Sidecar(title='SPI Map')
-            # show the map:
             display(self.spi_map)
         
         self.recognized_faces_and_locations_set = set()
 
         
-    # load request from json file (this data serves as user request form for giving camera feeds):
     def read_json_data_into_dict(self, json_file_path):
         with open(json_file_path) as json_data:
             data = json.load(json_data)
@@ -139,19 +125,16 @@ class SPI_Utils:
         else:
             return None
         
-    # encode message into bytes for sending through kafka
     @staticmethod
     def encode_message(message):
         return json.dumps(message).encode('utf-8')
     
-    # decode message and load into json format:
     @staticmethod
     def decode_message(message):
         message_string = message.decode('utf-8')       
         message_json = json.loads(message_string)
         return message_json
         
-    # send kafka message through producer.
     def produce_kafka_messages(self):
         for vid_request in self.json_requests_dict:
             kafka_message = {
@@ -163,7 +146,6 @@ class SPI_Utils:
                             }
             self.producer.send(self.streaming_kafka_topic, self.encode_message(kafka_message))
                                
-    # get single message from kafka consumer:
     def consume_kafka_messages(self):
         for message in self.consumer:
             decoded_message = self.decode_message(message.value)
@@ -171,7 +153,6 @@ class SPI_Utils:
                 
         
         
-    # FOR MONGO: submit requested video to be processed and recognized by camera thread:
     def run_video_submission_job(self, message):
         src = message["video_path"]
         cam_id = message["camera_id"]
@@ -189,13 +170,11 @@ class SPI_Utils:
             self.run_video_submission_job(decoded_message)
             
         
-    # manual implementation of structured streaming:
     def perform_spark_streaming_and_processing(self, patience=200):
         
         processed_data = []
         frame_counter = 0
-        
-        # starting patience level: 
+         
         waited_for = 0
         
         while True:
@@ -217,7 +196,7 @@ class SPI_Utils:
                 
                 break
             start = time.time()
-            # start processing each image:
+
             for f in new_files:
                 try:
                     
@@ -229,7 +208,6 @@ class SPI_Utils:
                     cam_latitude = frame_data["cam_latitude"]
                     cam_longitude = frame_data["cam_longitude"]
 
-                    # Detect Face
                     face_locations, face_names = self.sfr.detect_known_faces(np.asarray(frame))
                     for face_loc, name in zip(face_locations, face_names):
                         if name != "Unknown":
@@ -279,7 +257,7 @@ class BytesEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)    
 
         
-# Camera streaming class => saves arriving images into either (a) Mongo or (b) into local files as json (requiring auto cleaning every once in a while).
+
 class ThreadedCamera(object):
     def __init__(self, data_store_dir, width, cam_id, cam_latitude, cam_longitude, src=0, fps=30):
         
@@ -311,7 +289,6 @@ class ThreadedCamera(object):
         self.cam_latitude = cam_latitude
         self.cam_longitude = cam_longitude
         
-        # Start frame retrieval thread
         if self.stream_type != "None":
             self.thread = Thread(target=self.update, args=())
             self.thread.daemon = True
