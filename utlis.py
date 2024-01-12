@@ -170,7 +170,7 @@ class Utlis:
             self.run_video_submission_job(decoded_message)
             
         
-    def perform_spark_streaming_and_processing(self, patience=200):
+    def perform_spark_streaming_and_processing(self, patience=700):
         
         processed_data = []
         frame_counter = 0

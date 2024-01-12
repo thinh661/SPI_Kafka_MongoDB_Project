@@ -26,8 +26,8 @@
     },
     "video_5": {
       "camera_id": 105,
-      "camera_latitude": 18.06,
-      "camera_longitude": 105.36,
+      "camera_latitude": 18.173056,
+      "camera_longitude": 105.700139,
       "video_path": ".\\demo_data\\video_phu_test.mp4"
     },
     "video_6": {
@@ -41,6 +41,24 @@
       "camera_latitude": 21.030696,
       "camera_longitude": 105.852405,
       "video_path": ".\\demo_data\\video_manh_test.mp4"
+    },
+    "video_8": {
+      "camera_id": 108,
+      "camera_latitude": 10.771339,
+      "camera_longitude": 106.705919,
+      "video_path": ".\\demo_data\\video_trung_test.mp4"
+    },
+    "video_9": {
+      "camera_id": 109,
+      "camera_latitude": 25.253672,
+      "camera_longitude": 51.462174,
+      "video_path": ".\\demo_data\\video_messi_test.mp4"
+    },
+    "video_10": {
+      "camera_id": 110,
+      "camera_latitude": 53.881748, 
+      "camera_longitude": 27.546671,
+      "video_path": ".\\demo_data\\video_quys_test.mp4"
     }
   }
 }
